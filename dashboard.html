@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard IoT - Estación 01 (Estilo Power BI)</title>
+    <!-- Importar Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #2c3e50;
+            --text-muted: #7f8c8d;
+            --primary: #3498db;
+            --border-color: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 25px;
+            border-left: 6px solid #007bff;
+        }
+
+        .header-container h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #1e293b;
+        }
+
+        .status-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* Cuadrícula estilo Power BI */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 320px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        <div>
+            <h1>📊 Executive IoT Dashboard - Estación 01</h1>
+            <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 14px;">Monitoreo analítico en tiempo real desde AWS DynamoDB</p>
+        </div>
+        <div class="status-badge" id="estadoConexion">Conectando...</div>
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Gráfica 1: Temperatura -->
+        <div class="card">
+            <div class="card-title">🌡️ Temperatura del Aire (°C)</div>
+            <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfica 2: Humedad Aire -->
+        <div class="card">
+            <div class="card-title">💧 Humedad del Aire (%)</div>
+            <div class="chart-container">
+                <canvas id="humAireChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfica 3: Humedad Suelo -->
+        <div class="card">
+            <div class="card-title">🌱 Humedad del Suelo</div>
+            <div class="chart-container">
+                <canvas id="humSueloChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Gráfica 4: Luz -->
+        <div class="card">
+            <div class="card-title">☀️ Nivel de Luz</div>
+            <div class="chart-container">
+                <canvas id="luzChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // URL de tu API Gateway
+        const API_URL = "https://gntmkdnm4j.execute-api.us-east-2.amazonaws.com/lecturas";
+
+        // Configuración común para las gráficas estilo moderno/PowerBI
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { font: { size: 11 } }
+                },
+                y: {
+                    grid: { color: '#f1f5f9' },
+                    beginAtZero: true
+                }
+            }
+        };
+
+        // Inicializar las 4 gráficas independientes
+        const tempChart = new Chart(document.getElementById('tempChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ data: [], borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }] },
+            options: commonOptions
+        });
+
+        const humAireChart = new Chart(document.getElementById('humAireChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ data: [], borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }] },
+            options: commonOptions
+        });
+
+        const humSueloChart = new Chart(document.getElementById('humSueloChart').getContext('2d'), {
+            type: 'bar',
+            data: { labels: [], datasets: [{ data: [], backgroundColor: '#2ecc71', borderRadius: 4 }] },
+            options: commonOptions
+        });
+
+        const luzChart = new Chart(document.getElementById('luzChart').getContext('2d'), {
+            type: 'line',
+            data: { labels: [], datasets: [{ data: [], borderColor: '#f1c40f', backgroundColor: 'rgba(241, 196, 15, 0.1)', borderWidth: 2, fill: true, tension: 0.3 }] },
+            options: commonOptions
+        });
+
+        async function cargarDatos() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                
+                let datos = await response.json();
+                
+                // Ordenar cronológicamente (del más antiguo al más reciente)
+                datos.sort((a, b) => parseInt(a.TIMESTAMP) - parseInt(b.TIMESTAMP));
+
+                const labels = datos.map(item => `Seq: ${item.TIMESTAMP}`);
+                const temperaturas = datos.map(item => item.TempAire || 0);
+                const humedadesAire = datos.map(item => item.HumAire || 0);
+                const humedadesSuelo = datos.map(item => item.HumSuelo || 0);
+                const nivelesLuz = datos.map(item => item.Luz || 0);
+
+                // Actualizar Temperatura
+                tempChart.data.labels = labels;
+                tempChart.data.datasets[0].data = temperaturas;
+                tempChart.update();
+
+                // Actualizar Humedad Aire
+                humAireChart.data.labels = labels;
+                humAireChart.data.datasets[0].data = humedadesAire;
+                humAireChart.update();
+
+                // Actualizar Humedad Suelo
+                humSueloChart.data.labels = labels;
+                humSueloChart.data.datasets[0].data = humedadesSuelo;
+                humSueloChart.update();
+
+                // Actualizar Luz
+                luzChart.data.labels = labels;
+                luzChart.data.datasets[0].data = nivelesLuz;
+                luzChart.update();
+
+                document.getElementById('estadoConexion').innerText = "🟢 En Vivo (Conectado)";
+                document.getElementById('estadoConexion').style.background = "#dcfce7";
+                document.getElementById('estadoConexion').style.color = "#166534";
+
+            } catch (error) {
+                console.error("Error al cargar los datos:", error);
+                document.getElementById('estadoConexion').innerText = "🔴 Error de conexión";
+                document.getElementById('estadoConexion').style.background = "#fee2e2";
+                document.getElementById('estadoConexion').style.color = "#991b1b";
+            }
+        }
+
+        // Cargar al iniciar y actualizar cada 5 segundos automáticamente
+        cargarDatos();
+        setInterval(cargarDatos, 5000);
+    </script>
+</body>
+</html>
