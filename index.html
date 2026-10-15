@@ -133,7 +133,8 @@
     </div>
 
     <script>
-        const API_URL = "https://gntmkdnm4j.execute-api.us-east-2.amazonaws.com/lecturas";
+        // URL de tu API Gateway protegida (Stage: prod)
+        const API_URL = "https://omgjl04hy3.execute-api.us-east-2.amazonaws.com/prod/lecturas";
 
         const commonOptions = {
             responsive: true,
@@ -179,7 +180,14 @@
 
         async function cargarDatos() {
             try {
-                const response = await fetch(API_URL);
+                // Petición HTTP incluyendo obligatoriamente la API Key de seguridad
+                const response = await fetch(API_URL, {
+                    method: "GET",
+                    headers: {
+                        "x-api-key": "g9r8IgKIshaYwnCywFkd887wwqqGkxkz3xFrUY1f" // <--- REEMPLAZA ESTO CON TU API KEY REAL
+                    }
+                });
+
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 let datos = await response.json();
@@ -234,12 +242,13 @@
             } catch (error) {
                 console.error("Error al cargar los datos:", error);
                 const badge = document.getElementById('estadoConexion');
-                badge.innerText = "🔴 Error de conexión con API";
+                badge.innerText = "🔴 Error de autenticación / conexión";
                 badge.style.background = "#fee2e2";
                 badge.style.color = "#991b1b";
             }
         }
 
+        // Cargar al iniciar y actualizar cada 5 segundos automáticamente
         cargarDatos();
         setInterval(cargarDatos, 5000);
     </script>
