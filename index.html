@@ -21,7 +21,7 @@
             margin: 0;
             padding: 10px;
             box-sizing: border-box;
-            overflow: hidden; /* Evita el scroll vertical en pantallas estándar */
+            overflow: hidden;
         }
 
         body {
@@ -50,6 +50,12 @@
             margin: 0;
             font-size: 20px;
             color: #1e293b;
+        }
+
+        .header-badges {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
         /* Barra de Filtros */
@@ -89,7 +95,7 @@
             grid-template-rows: repeat(2, 1fr);
             gap: 12px;
             flex-grow: 1;
-            min-height: 0; /* Impide desbordamiento del grid */
+            min-height: 0;
         }
 
         .card {
@@ -130,7 +136,10 @@
             <h1>📊 Proyecto IoT Dashboard - Estación 01</h1>
             <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 12px;">Monitoreo analítico en tiempo real desde AWS DynamoDB</p>
         </div>
-        <div class="status-badge" id="estadoConexion" style="background: #e0f2fe; color: #0369a1;">Conectando...</div>
+        <div class="header-badges">
+            <div class="status-badge" id="estadoAmbiente" style="background: #fef3c7; color: #92400e;">🌤️ Ambiente: --</div>
+            <div class="status-badge" id="estadoConexion" style="background: #e0f2fe; color: #0369a1;">Conectando...</div>
+        </div>
     </div>
 
     <!-- Barra de Filtros Interactivos -->
@@ -214,13 +223,11 @@
             options: commonOptions
         });
 
-        // Función para mostrar u ocultar tarjetas dinámicamente según los filtros
         function toggleCard(cardId, show) {
             const card = document.getElementById(cardId);
             const grid = document.getElementById('dashboardGrid');
             card.style.display = show ? 'flex' : 'none';
             
-            // Ajustar columnas dinámicamente según las tarjetas visibles
             const visibleCards = grid.querySelectorAll('.card[style*="flex"], .card:not([style*="display: none"])');
             if (visibleCards.length === 1) {
                 grid.style.gridTemplateColumns = '1fr';
@@ -232,13 +239,13 @@
         }
 
         async function cargarDatos() {
-            const badge = document.getElementById('estadoConexion');
+            const badgeConexion = document.getElementById('estadoConexion');
+            const badgeAmbiente = document.getElementById('estadoAmbiente');
             
-            // Validación previa de red del navegador
             if (!navigator.onLine) {
-                badge.innerText = "🔴 Sin conexión a Internet";
-                badge.style.background = "#fee2e2";
-                badge.style.color = "#991b1b";
+                badgeConexion.innerText = "🔴 Sin conexión a Internet";
+                badgeConexion.style.background = "#fee2e2";
+                badgeConexion.style.color = "#991b1b";
                 return;
             }
 
@@ -256,19 +263,24 @@
                 datos.sort((a, b) => parseInt(a.TIMESTAMP) - parseInt(b.TIMESTAMP));
 
                 const ultimoRegistro = datos[datos.length - 1];
+                
+                // Mostrar el estado ambiental actual en la insignia superior
+                const estadoActual = ultimoRegistro.Estado || "NORMAL";
+                badgeAmbiente.innerText = `🌤️ Ambiente: ${estadoActual}`;
+
                 const timestampUltimo = parseInt(ultimoRegistro.TIMESTAMP);
                 const ahoraEpoch = Date.now();
                 const timestampMs = timestampUltimo > 10000000000 ? timestampUltimo : timestampUltimo * 1000;
                 const diferenciaSegundos = (ahoraEpoch - timestampMs) / 1000;
 
                 if (diferenciaSegundos > 35) {
-                    badge.innerText = "🟡 Conectado (Esperando datos del Arduino...)";
-                    badge.style.background = "#fef9c3";
-                    badge.style.color = "#854d0e";
+                    badgeConexion.innerText = "🟡 Conectado (Esperando datos...)";
+                    badgeConexion.style.background = "#fef9c3";
+                    badgeConexion.style.color = "#854d0e";
                 } else {
-                    badge.innerText = "🟢 En Vivo (Conectado)";
-                    badge.style.background = "#dcfce7";
-                    badge.style.color = "#166534";
+                    badgeConexion.innerText = "🟢 En Vivo (Conectado)";
+                    badgeConexion.style.background = "#dcfce7";
+                    badgeConexion.style.color = "#166534";
                 }
 
                 const labels = datos.map(item => `Seq: ${item.Seq !== undefined ? item.Seq : item.TIMESTAMP}`);
@@ -295,26 +307,23 @@
 
             } catch (error) {
                 console.error("Error al cargar los datos:", error);
-                badge.innerText = "🔄 Reconectando automáticamente...";
-                badge.style.background = "#fff7ed";
-                badge.style.color = "#c2410c";
+                badgeConexion.innerText = "🔄 Reconectando...";
+                badgeConexion.style.background = "#fff7ed";
+                badgeConexion.style.color = "#c2410c";
             }
         }
 
-        // Reconexión automática instantánea al recuperar red de internet
         window.addEventListener('online', () => {
-            console.log("Internet restablecido. Sincronizando...");
             cargarDatos();
         });
 
         window.addEventListener('offline', () => {
-            const badge = document.getElementById('estadoConexion');
-            badge.innerText = "🔴 Sin conexión a Internet";
-            badge.style.background = "#fee2e2";
-            badge.style.color = "#991b1b";
+            const badgeConexion = document.getElementById('estadoConexion');
+            badgeConexion.innerText = "🔴 Sin conexión a Internet";
+            badgeConexion.style.background = "#fee2e2";
+            badgeConexion.style.color = "#991b1b";
         });
 
-        // Inicializar y refrescar cada 5 segundos
         cargarDatos();
         setInterval(cargarDatos, 5000);
     </script>
