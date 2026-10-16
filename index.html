@@ -217,7 +217,7 @@
                     badge.style.color = "#166534";
                 }
 
-                const labels = datos.map(item => `Seq: ${item.TIMESTAMP}`);
+                const labels = datos.map(item => item.Seq !== undefined ? `Seq: ${item.Seq}` : `Val: ${item.TIMESTAMP}`);
                 const temperaturas = datos.map(item => item.TempAire || 0);
                 const humedadesAire = datos.map(item => item.HumAire || 0);
                 const humedadesSuelo = datos.map(item => item.HumSuelo || 0);
