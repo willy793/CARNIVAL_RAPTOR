@@ -16,75 +16,110 @@
             --border-color: #e2e8f0;
         }
 
+        html, body {
+            height: 100vh;
+            margin: 0;
+            padding: 10px;
+            box-sizing: border-box;
+            overflow: hidden; /* Evita el scroll vertical en pantallas estándar */
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            margin: 0;
-            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        /* Encabezado con título y estado de conexión */
+        /* Encabezado compacto */
         .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: var(--card-bg);
-            padding: 20px 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border-left: 6px solid #007bff;
+            flex-shrink: 0;
         }
 
         .header-container h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 20px;
             color: #1e293b;
         }
 
+        /* Barra de Filtros */
+        .filters-container {
+            display: flex;
+            gap: 15px;
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+            align-items: center;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .filters-container label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+        }
+
         .status-badge {
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 20px;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             transition: all 0.3s ease;
         }
 
-        /* Cuadrícula estilo Power BI */
+        /* Cuadrícula ajustada a pantalla completa (2x2) */
         .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 12px;
+            flex-grow: 1;
+            min-height: 0; /* Impide desbordamiento del grid */
         }
 
         .card {
             background: var(--card-bg);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            padding: 12px 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             border: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            height: 320px;
+            height: 100%;
+            box-sizing: border-box;
         }
 
         .card-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 700;
             color: #334155;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            flex-shrink: 0;
         }
 
         .chart-container {
             position: relative;
             flex-grow: 1;
             width: 100%;
-            height: 100%;
+            min-height: 0;
         }
     </style>
 </head>
@@ -93,14 +128,23 @@
     <div class="header-container">
         <div>
             <h1>📊 Proyecto IoT Dashboard - Estación 01</h1>
-            <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 14px;">Monitoreo analítico en tiempo real desde AWS DynamoDB</p>
+            <p style="margin: 2px 0 0 0; color: var(--text-muted); font-size: 12px;">Monitoreo analítico en tiempo real desde AWS DynamoDB</p>
         </div>
         <div class="status-badge" id="estadoConexion" style="background: #e0f2fe; color: #0369a1;">Conectando...</div>
     </div>
 
-    <div class="dashboard-grid">
+    <!-- Barra de Filtros Interactivos -->
+    <div class="filters-container">
+        <span>👁️ Mostrar Gráficas:</span>
+        <label><input type="checkbox" id="chkTemp" checked onchange="toggleCard('cardTemp', this.checked)"> Temperatura</label>
+        <label><input type="checkbox" id="chkHumAire" checked onchange="toggleCard('cardHumAire', this.checked)"> Humedad Aire</label>
+        <label><input type="checkbox" id="chkHumSuelo" checked onchange="toggleCard('cardHumSuelo', this.checked)"> Humedad Suelo</label>
+        <label><input type="checkbox" id="chkLuz" checked onchange="toggleCard('cardLuz', this.checked)"> Nivel de Luz</label>
+    </div>
+
+    <div class="dashboard-grid" id="dashboardGrid">
         <!-- Gráfica 1: Temperatura -->
-        <div class="card">
+        <div class="card" id="cardTemp">
             <div class="card-title">🌡️ Temperatura del Aire (°C)</div>
             <div class="chart-container">
                 <canvas id="tempChart"></canvas>
@@ -108,7 +152,7 @@
         </div>
 
         <!-- Gráfica 2: Humedad Aire -->
-        <div class="card">
+        <div class="card" id="cardHumAire">
             <div class="card-title">💧 Humedad del Aire (%)</div>
             <div class="chart-container">
                 <canvas id="humAireChart"></canvas>
@@ -116,7 +160,7 @@
         </div>
 
         <!-- Gráfica 3: Humedad Suelo -->
-        <div class="card">
+        <div class="card" id="cardHumSuelo">
             <div class="card-title">🌱 Humedad del Suelo (%)</div>
             <div class="chart-container">
                 <canvas id="humSueloChart"></canvas>
@@ -124,7 +168,7 @@
         </div>
 
         <!-- Gráfica 4: Luz -->
-        <div class="card">
+        <div class="card" id="cardLuz">
             <div class="card-title">☀️ Nivel de Luz (%)</div>
             <div class="chart-container">
                 <canvas id="luzChart"></canvas>
@@ -133,24 +177,16 @@
     </div>
 
     <script>
-        // URL de tu API Gateway protegida (Stage: prod)
         const API_URL = "https://omgjl04hy3.execute-api.us-east-2.amazonaws.com/prod/lecturas";
+        const API_KEY = "g9r8IgKIshaYwnCywFkd887wwqqGkxkz3xFrUY1f";
 
         const commonOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
+            plugins: { legend: { display: false } },
             scales: {
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 11 } }
-                },
-                y: {
-                    grid: { color: '#f1f5f9' },
-                    beginAtZero: true
-                }
+                x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                y: { grid: { color: '#f1f5f9' }, beginAtZero: true }
             }
         };
 
@@ -178,46 +214,64 @@
             options: commonOptions
         });
 
+        // Función para mostrar u ocultar tarjetas dinámicamente según los filtros
+        function toggleCard(cardId, show) {
+            const card = document.getElementById(cardId);
+            const grid = document.getElementById('dashboardGrid');
+            card.style.display = show ? 'flex' : 'none';
+            
+            // Ajustar columnas dinámicamente según las tarjetas visibles
+            const visibleCards = grid.querySelectorAll('.card[style*="flex"], .card:not([style*="display: none"])');
+            if (visibleCards.length === 1) {
+                grid.style.gridTemplateColumns = '1fr';
+                grid.style.gridTemplateRows = '1fr';
+            } else {
+                grid.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                grid.style.gridTemplateRows = 'repeat(2, 1fr)';
+            }
+        }
+
         async function cargarDatos() {
+            const badge = document.getElementById('estadoConexion');
+            
+            // Validación previa de red del navegador
+            if (!navigator.onLine) {
+                badge.innerText = "🔴 Sin conexión a Internet";
+                badge.style.background = "#fee2e2";
+                badge.style.color = "#991b1b";
+                return;
+            }
+
             try {
-                // Petición HTTP incluyendo obligatoriamente la API Key de seguridad
                 const response = await fetch(API_URL, {
                     method: "GET",
-                    headers: {
-                        "x-api-key": "g9r8IgKIshaYwnCywFkd887wwqqGkxkz3xFrUY1f" // <--- REEMPLAZA ESTO CON TU API KEY REAL
-                    }
+                    headers: { "x-api-key": API_KEY }
                 });
 
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                 
                 let datos = await response.json();
-                if (!datos || datos.length === 0) throw new Error("No hay datos en la base de datos.");
+                if (!datos || datos.length === 0) throw new Error("No hay datos disponibles.");
 
-                // Ordenar cronológicamente (del más antiguo al más reciente)
                 datos.sort((a, b) => parseInt(a.TIMESTAMP) - parseInt(b.TIMESTAMP));
 
-                // Obtener el último registro recibido para validar conectividad
                 const ultimoRegistro = datos[datos.length - 1];
                 const timestampUltimo = parseInt(ultimoRegistro.TIMESTAMP);
                 const ahoraEpoch = Date.now();
-
                 const timestampMs = timestampUltimo > 10000000000 ? timestampUltimo : timestampUltimo * 1000;
                 const diferenciaSegundos = (ahoraEpoch - timestampMs) / 1000;
 
-                const badge = document.getElementById('estadoConexion');
-
-                // Watchdog: Si el último dato tiene más de 35 segundos de antigüedad, muestra Desconectado
                 if (diferenciaSegundos > 35) {
-                    badge.innerText = "🔴 Desconectado (Sin señal reciente)";
-                    badge.style.background = "#fee2e2";
-                    badge.style.color = "#991b1b";
+                    badge.innerText = "🟡 Conectado (Esperando datos del Arduino...)";
+                    badge.style.background = "#fef9c3";
+                    badge.style.color = "#854d0e";
                 } else {
                     badge.innerText = "🟢 En Vivo (Conectado)";
                     badge.style.background = "#dcfce7";
                     badge.style.color = "#166534";
                 }
 
-                const labels = datos.map(item => item.Seq !== undefined ? `Seq: ${item.Seq}` : `Val: ${item.TIMESTAMP}`);
+                const labels = datos.map(item => `Seq: ${item.Seq !== undefined ? item.Seq : item.TIMESTAMP}`);
                 const temperaturas = datos.map(item => item.TempAire || 0);
                 const humedadesAire = datos.map(item => item.HumAire || 0);
                 const humedadesSuelo = datos.map(item => item.HumSuelo || 0);
@@ -241,14 +295,26 @@
 
             } catch (error) {
                 console.error("Error al cargar los datos:", error);
-                const badge = document.getElementById('estadoConexion');
-                badge.innerText = "🔴 Error de autenticación / conexión";
-                badge.style.background = "#fee2e2";
-                badge.style.color = "#991b1b";
+                badge.innerText = "🔄 Reconectando automáticamente...";
+                badge.style.background = "#fff7ed";
+                badge.style.color = "#c2410c";
             }
         }
 
-        // Cargar al iniciar y actualizar cada 5 segundos automáticamente
+        // Reconexión automática instantánea al recuperar red de internet
+        window.addEventListener('online', () => {
+            console.log("Internet restablecido. Sincronizando...");
+            cargarDatos();
+        });
+
+        window.addEventListener('offline', () => {
+            const badge = document.getElementById('estadoConexion');
+            badge.innerText = "🔴 Sin conexión a Internet";
+            badge.style.background = "#fee2e2";
+            badge.style.color = "#991b1b";
+        });
+
+        // Inicializar y refrescar cada 5 segundos
         cargarDatos();
         setInterval(cargarDatos, 5000);
     </script>
